@@ -1,61 +1,139 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { createGardenNote, GardenNote, listGardenNotes } from '@/lib/garden-notes';
 
 export default function HomeScreen() {
+  const [notes, setNotes] = useState<GardenNote[]>([]);
+  const [body, setBody] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadNotes = useCallback(async () => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      setNotes(await listGardenNotes());
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not load notes.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void loadNotes();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [loadNotes]);
+
+  async function handleCreateNote() {
+    const trimmedBody = body.trim();
+
+    if (!trimmedBody) {
+      return;
+    }
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      const note = await createGardenNote(trimmedBody);
+      setNotes((currentNotes) => [note, ...currentNotes]);
+      setBody('');
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not save note.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+            Garden of Giving
           </ThemedText>
+          <ThemedText style={styles.subtitle} themeColor="textSecondary">
+            A first Supabase connection test for shared notes.
+          </ThemedText>
+        </View>
+
+        <ThemedView type="backgroundElement" style={styles.form}>
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            placeholder="Write a note for the garden"
+            placeholderTextColor="#60646C"
+            multiline
+            style={styles.input}
+          />
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSaving || body.trim().length === 0}
+            onPress={handleCreateNote}
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              (isSaving || body.trim().length === 0) && styles.buttonDisabled,
+            ]}>
+            <ThemedText type="smallBold" style={styles.buttonText}>
+              {isSaving ? 'Saving...' : 'Save note'}
+            </ThemedText>
+          </Pressable>
         </ThemedView>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
+        {error ? (
+          <ThemedView type="backgroundElement" style={styles.errorBox}>
+            <ThemedText type="smallBold">Supabase needs one more step</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {error}
+            </ThemedText>
+          </ThemedView>
+        ) : null}
+
+        <View style={styles.listHeader}>
+          <ThemedText type="smallBold">Latest notes</ThemedText>
+          <Pressable accessibilityRole="button" onPress={loadNotes} disabled={isLoading}>
+            <ThemedText type="linkPrimary">{isLoading ? 'Refreshing' : 'Refresh'}</ThemedText>
+          </Pressable>
+        </View>
+
+        {isLoading ? (
+          <ActivityIndicator />
+        ) : (
+          <ScrollView contentContainerStyle={styles.list} style={styles.scroller}>
+            {notes.length === 0 ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                No notes yet.
+              </ThemedText>
+            ) : (
+              notes.map((note) => (
+                <ThemedView key={note.id} type="backgroundElement" style={styles.note}>
+                  <ThemedText>{note.body}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {new Date(note.createdAt).toLocaleString()}
+                  </ThemedText>
+                </ThemedView>
+              ))
+            )}
+          </ScrollView>
+        )}
+
+        <ThemedText type="code" style={styles.footer}>
+          Supabase table: garden_notes
         </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
     </ThemedView>
   );
@@ -64,35 +142,86 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     flexDirection: 'row',
   },
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
-    alignItems: 'center',
     gap: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.three,
     maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  header: {
+    gap: Spacing.two,
+    paddingTop: Spacing.five,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 40,
+    lineHeight: 44,
   },
-  code: {
-    textTransform: 'uppercase',
+  subtitle: {
+    maxWidth: 520,
   },
-  stepContainer: {
+  form: {
     gap: Spacing.three,
-    alignSelf: 'stretch',
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.two,
+  },
+  input: {
+    minHeight: 96,
+    borderRadius: Spacing.two,
+    borderColor: '#B7BBC4',
+    borderWidth: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    padding: Spacing.three,
+    backgroundColor: '#FFFFFF',
+    color: '#000000',
+  },
+  button: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#1D6F42',
+    borderRadius: Spacing.two,
+    minWidth: 128,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+  },
+  buttonPressed: {
+    opacity: 0.82,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+  },
+  errorBox: {
+    gap: Spacing.one,
+    padding: Spacing.three,
+    borderColor: '#B42318',
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+  },
+  listHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  scroller: {
+    flex: 1,
+  },
+  list: {
+    gap: Spacing.two,
+    paddingBottom: Spacing.three,
+  },
+  note: {
+    gap: Spacing.one,
+    padding: Spacing.three,
+    borderRadius: Spacing.two,
+  },
+  footer: {
+    textTransform: 'uppercase',
   },
 });
