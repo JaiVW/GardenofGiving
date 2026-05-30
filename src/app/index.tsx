@@ -1,46 +1,59 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthScreen } from '@/components/auth-screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { createGardenNote, GardenNote, listGardenNotes } from '@/lib/garden-notes';
+import { useAuth } from '@/lib/auth';
+import {
+  formatDateLabel,
+  getTodayState,
+  saveCheckin,
+  setEmailNotificationsEnabled,
+  TodayState,
+  todayKey,
+} from '@/lib/gog';
 
 export default function HomeScreen() {
-  const [notes, setNotes] = useState<GardenNote[]>([]);
-  const [body, setBody] = useState('');
+  const { isLoading: isAuthLoading, session, signOut } = useAuth();
+  const [todayState, setTodayState] = useState<TodayState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const userId = session?.user.id;
+  const email = session?.user.email ?? '';
 
-  const loadNotes = useCallback(async () => {
+  const loadToday = useCallback(async () => {
+    if (!userId) {
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
     try {
-      setNotes(await listGardenNotes());
+      setTodayState(await getTodayState(userId, email));
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Could not load notes.');
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not load your garden.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [email, userId]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      void loadNotes();
+      void loadToday();
     }, 0);
 
     return () => {
       clearTimeout(timeout);
     };
-  }, [loadNotes]);
+  }, [loadToday]);
 
-  async function handleCreateNote() {
-    const trimmedBody = body.trim();
-
-    if (!trimmedBody) {
+  async function handleCheckin(completed: boolean) {
+    if (!userId) {
       return;
     }
 
@@ -48,92 +61,158 @@ export default function HomeScreen() {
     setIsSaving(true);
 
     try {
-      const note = await createGardenNote(trimmedBody);
-      setNotes((currentNotes) => [note, ...currentNotes]);
-      setBody('');
+      await saveCheckin(userId, completed);
+      await loadToday();
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Could not save note.');
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not save your answer.');
     } finally {
       setIsSaving(false);
     }
   }
 
+  async function handleToggleNotifications(enabled: boolean) {
+    if (!userId || !todayState) {
+      return;
+    }
+
+    setTodayState({ ...todayState, emailNotificationsEnabled: enabled });
+    try {
+      await setEmailNotificationsEnabled(userId, enabled);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error ? caughtError.message : 'Could not update email reminders.'
+      );
+      setTodayState({ ...todayState, emailNotificationsEnabled: !enabled });
+    }
+  }
+
+  if (isAuthLoading) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator />
+      </ThemedView>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.title}>
-            Garden of Giving
-          </ThemedText>
-          <ThemedText style={styles.subtitle} themeColor="textSecondary">
-            A first Supabase connection test for shared notes.
-          </ThemedText>
-        </View>
-
-        <ThemedView type="backgroundElement" style={styles.form}>
-          <TextInput
-            value={body}
-            onChangeText={setBody}
-            placeholder="Write a note for the garden"
-            placeholderTextColor="#60646C"
-            multiline
-            style={styles.input}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSaving || body.trim().length === 0}
-            onPress={handleCreateNote}
-            style={({ pressed }) => [
-              styles.button,
-              pressed && styles.buttonPressed,
-              (isSaving || body.trim().length === 0) && styles.buttonDisabled,
-            ]}>
-            <ThemedText type="smallBold" style={styles.buttonText}>
-              {isSaving ? 'Saving...' : 'Save note'}
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
-
-        {error ? (
-          <ThemedView type="backgroundElement" style={styles.errorBox}>
-            <ThemedText type="smallBold">Supabase needs one more step</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {error}
-            </ThemedText>
-          </ThemedView>
-        ) : null}
-
-        <View style={styles.listHeader}>
-          <ThemedText type="smallBold">Latest notes</ThemedText>
-          <Pressable accessibilityRole="button" onPress={loadNotes} disabled={isLoading}>
-            <ThemedText type="linkPrimary">{isLoading ? 'Refreshing' : 'Refresh'}</ThemedText>
-          </Pressable>
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator />
-        ) : (
-          <ScrollView contentContainerStyle={styles.list} style={styles.scroller}>
-            {notes.length === 0 ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                No notes yet.
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <View>
+              <ThemedText type="smallBold" style={styles.kicker}>
+                Today&apos;s invitation
               </ThemedText>
-            ) : (
-              notes.map((note) => (
-                <ThemedView key={note.id} type="backgroundElement" style={styles.note}>
-                  <ThemedText>{note.body}</ThemedText>
+              <ThemedText type="title" style={styles.title}>
+                Garden of Giving
+              </ThemedText>
+            </View>
+            <Pressable accessibilityRole="button" onPress={signOut}>
+              <ThemedText type="linkPrimary">Sign out</ThemedText>
+            </Pressable>
+          </View>
+
+          {isLoading ? (
+            <ActivityIndicator />
+          ) : (
+            <>
+              <ThemedView type="backgroundElement" style={styles.todayPanel}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {formatDateLabel(todayKey())}
+                </ThemedText>
+                <ThemedText type="subtitle" style={styles.challenge}>
+                  {todayState?.challenge?.text ?? 'The garden is resting today.'}
+                </ThemedText>
+                <View style={styles.checkinRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isSaving}
+                    onPress={() => handleCheckin(true)}
+                    style={({ pressed }) => [
+                      styles.choiceCard,
+                      todayState?.completedToday === true && styles.choiceSelected,
+                      pressed && styles.buttonPressed,
+                    ]}>
+                    <ThemedText type="smallBold">I did it</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isSaving}
+                    onPress={() => handleCheckin(false)}
+                    style={({ pressed }) => [
+                      styles.choiceCard,
+                      todayState?.completedToday === false && styles.choiceSelected,
+                      pressed && styles.buttonPressed,
+                    ]}>
+                    <ThemedText type="smallBold">Not today</ThemedText>
+                  </Pressable>
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {todayState?.completedToday === true
+                    ? 'Thank you for tending the garden today.'
+                    : todayState?.completedToday === false
+                      ? 'Rest is part of the rhythm. You can change this today.'
+                      : 'Choose an answer when you are ready.'}
+                </ThemedText>
+              </ThemedView>
+
+              <ThemedView type="backgroundElement" style={styles.summaryStrip}>
+                <View>
+                  <ThemedText type="subtitle">{todayState?.totalCompleted ?? 0}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {new Date(note.createdAt).toLocaleString()}
+                    completed days
+                  </ThemedText>
+                </View>
+                <View style={styles.toggleRow}>
+                  <ThemedText type="smallBold">Daily email reminders</ThemedText>
+                  <Switch
+                    value={todayState?.emailNotificationsEnabled ?? true}
+                    onValueChange={handleToggleNotifications}
+                  />
+                </View>
+              </ThemedView>
+
+              {error ? (
+                <ThemedView type="backgroundElement" style={styles.errorBox}>
+                  <ThemedText type="smallBold">Something needs attention</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {error}
                   </ThemedText>
                 </ThemedView>
-              ))
-            )}
-          </ScrollView>
-        )}
+              ) : null}
 
-        <ThemedText type="code" style={styles.footer}>
-          Supabase table: garden_notes
-        </ThemedText>
+              <View style={styles.listHeader}>
+                <ThemedText type="smallBold">Recent tasks</ThemedText>
+                <Pressable accessibilityRole="button" onPress={loadToday}>
+                  <ThemedText type="linkPrimary">Refresh</ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.list}>
+                {todayState?.recentTasks.length ? (
+                  todayState.recentTasks.map((task) => (
+                    <ThemedView key={task.date} type="backgroundElement" style={styles.task}>
+                      <View style={styles.taskCopy}>
+                        <ThemedText type="smallBold">{formatDateLabel(task.date)}</ThemedText>
+                        <ThemedText>{task.text}</ThemedText>
+                      </View>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {task.completed === true ? 'Done' : task.completed === false ? 'Skipped' : 'Open'}
+                      </ThemedText>
+                    </ThemedView>
+                  ))
+                ) : (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Your task history will appear after your first invitation.
+                  </ThemedText>
+                )}
+              </View>
+            </>
+          )}
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -144,58 +223,77 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
+  centered: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
     maxWidth: MaxContentWidth,
   },
-  header: {
-    gap: Spacing.two,
+  scrollContent: {
+    gap: Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.four,
     paddingTop: Spacing.five,
+  },
+  header: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'space-between',
+  },
+  kicker: {
+    color: '#2E6659',
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 40,
     lineHeight: 44,
   },
-  subtitle: {
-    maxWidth: 520,
-  },
-  form: {
+  todayPanel: {
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
+    paddingVertical: Spacing.four,
     borderRadius: Spacing.two,
   },
-  input: {
-    minHeight: 96,
-    borderRadius: Spacing.two,
-    borderColor: '#B7BBC4',
-    borderWidth: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    padding: Spacing.three,
+  challenge: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  checkinRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  choiceCard: {
     backgroundColor: '#FFFFFF',
-    color: '#000000',
-  },
-  button: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#1D6F42',
+    borderColor: '#D8C9B7',
     borderRadius: Spacing.two,
-    minWidth: 128,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 72,
+    justifyContent: 'center',
+    padding: Spacing.three,
+  },
+  choiceSelected: {
+    backgroundColor: '#B7D9C4',
+    borderColor: '#2E6659',
   },
   buttonPressed: {
     opacity: 0.82,
   },
-  buttonDisabled: {
-    opacity: 0.5,
+  summaryStrip: {
+    alignItems: 'center',
+    borderRadius: Spacing.two,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: Spacing.three,
   },
-  buttonText: {
-    color: '#FFFFFF',
+  toggleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.two,
   },
   errorBox: {
     gap: Spacing.one,
@@ -209,19 +307,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  scroller: {
-    flex: 1,
-  },
   list: {
     gap: Spacing.two,
-    paddingBottom: Spacing.three,
   },
-  note: {
-    gap: Spacing.one,
-    padding: Spacing.three,
+  task: {
+    alignItems: 'center',
     borderRadius: Spacing.two,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'space-between',
+    padding: Spacing.three,
   },
-  footer: {
-    textTransform: 'uppercase',
+  taskCopy: {
+    flex: 1,
+    gap: Spacing.one,
   },
 });
