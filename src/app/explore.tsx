@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, ImageBackground, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthScreen } from '@/components/auth-screen';
@@ -10,14 +10,12 @@ import { useAuth } from '@/lib/auth';
 import { GardenSlot, getGardenState, getNextGrowthGoal } from '@/lib/gog';
 import { supabase } from '@/lib/supabase';
 
-function Plant({ slot }: { slot: GardenSlot }) {
-  const toneStyle =
-    slot.tone === 'rose' || slot.tone === 'berry'
-      ? styles.plantRose
-      : slot.tone === 'gold'
-        ? styles.plantGold
-        : styles.plantGreen;
+const gardenScene = require('@/assets/garden/garden-scene.png');
+const plantSeedling = require('@/assets/garden/plant-seedling.png');
+const plantBloom = require('@/assets/garden/plant-bloom.png');
 
+function Plant({ slot }: { slot: GardenSlot }) {
+  const source = slot.stage === 'seed' || slot.stage === 'sprout' ? plantSeedling : plantBloom;
   return (
     <View
       style={[
@@ -26,19 +24,11 @@ function Plant({ slot }: { slot: GardenSlot }) {
         slot.size === 'small' && styles.smallSlot,
         slot.size === 'large' && styles.largeSlot,
       ]}>
-      <View style={styles.shadow} />
-      <View style={[styles.plant, styles[slot.stage]]}>
-        <View style={[styles.stem, toneStyle]} />
-        <View style={[styles.leaf, styles.leafLeft, toneStyle]} />
-        <View style={[styles.leaf, styles.leafRight, toneStyle]} />
-        {slot.stage === 'growth' || slot.stage === 'bloom' ? (
-          <>
-            <View style={[styles.leaf, styles.leafSmallLeft, toneStyle]} />
-            <View style={[styles.leaf, styles.leafSmallRight, toneStyle]} />
-          </>
-        ) : null}
-        {slot.stage === 'bloom' ? <View style={[styles.flower, toneStyle]} /> : null}
-      </View>
+      <Image
+        accessibilityIgnoresInvertColors
+        source={source}
+        style={[styles.plantImage, styles[slot.stage]]}
+      />
     </View>
   );
 }
@@ -104,12 +94,12 @@ export default function GardenScreen() {
           </ThemedText>
         </View>
 
-        <View style={styles.gardenBed}>
-          <View style={styles.sky}>
-            <View style={styles.sunDisc} />
-            <View style={[styles.mountain, styles.mountainOne]} />
-            <View style={[styles.mountain, styles.mountainTwo]} />
-          </View>
+        <ImageBackground
+          accessibilityIgnoresInvertColors
+          imageStyle={styles.gardenSceneImage}
+          source={gardenScene}
+          style={styles.gardenBed}>
+          <View style={styles.sceneVeil} />
           <View style={styles.gardenStats}>
             <View style={styles.statCell}>
               <ThemedText style={styles.statNumber}>{totalCompleted}</ThemedText>
@@ -124,11 +114,6 @@ export default function GardenScreen() {
               </ThemedText>
             </View>
           </View>
-          <View style={styles.fountain}>
-            <View style={styles.fountainTop} />
-            <View style={styles.fountainStem} />
-            <View style={styles.fountainBowl} />
-          </View>
           {isLoading ? (
             <View style={styles.loadingGarden}>
               <ActivityIndicator />
@@ -140,7 +125,7 @@ export default function GardenScreen() {
               ))}
             </View>
           )}
-        </View>
+        </ImageBackground>
 
         <View style={styles.progress}>
           <View>
@@ -198,7 +183,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   gardenBed: {
-    backgroundColor: '#DDE4DC',
     borderColor: 'rgba(80,91,86,0.18)',
     borderRadius: 8,
     borderWidth: 1,
@@ -206,6 +190,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     ...GardenShadow,
+  },
+  gardenSceneImage: {
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  sceneVeil: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   sky: {
     backgroundColor: '#EFF0EB',
@@ -321,7 +317,7 @@ const styles = StyleSheet.create({
   },
   bedRow: {
     alignContent: 'flex-end',
-    bottom: '9%',
+    bottom: '6%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -329,13 +325,13 @@ const styles = StyleSheet.create({
     left: '5%',
     position: 'absolute',
     right: '5%',
-    top: '26%',
+    top: '56%',
     zIndex: 5,
   },
   plantSlot: {
     alignItems: 'center',
     flexBasis: '15%',
-    height: 164,
+    height: 126,
     justifyContent: 'flex-end',
     minWidth: 86,
     position: 'relative',
@@ -356,6 +352,11 @@ const styles = StyleSheet.create({
     height: 13,
     position: 'absolute',
     width: '58%',
+  },
+  plantImage: {
+    height: 118,
+    resizeMode: 'contain',
+    width: 118,
   },
   plant: {
     alignItems: 'center',

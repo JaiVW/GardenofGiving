@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthScreen } from '@/components/auth-screen';
@@ -8,6 +8,9 @@ import { GardenColors, GardenSoftShadow } from '@/constants/garden-theme';
 import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatDateLabel, getCompletedTasks, TaskHistoryItem } from '@/lib/gog';
+
+const plantSeedling = require('@/assets/garden/plant-seedling.png');
+const plantBloom = require('@/assets/garden/plant-bloom.png');
 
 function SeedMark() {
   return (
@@ -99,7 +102,11 @@ export default function CompletedScreen() {
                       </ThemedText>
                     </View>
                   </View>
-                  <SeedMark />
+                  <Image
+                    accessibilityIgnoresInvertColors
+                    source={index % 3 === 0 ? plantBloom : plantSeedling}
+                    style={styles.timelinePlant}
+                  />
                 </View>
               </View>
             ))}
@@ -209,6 +216,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 20,
     ...GardenSoftShadow,
+  },
+  timelinePlant: {
+    alignSelf: 'center',
+    height: 90,
+    opacity: 0.86,
+    resizeMode: 'contain',
+    width: 90,
   },
   taskCopy: {
     flex: 1,

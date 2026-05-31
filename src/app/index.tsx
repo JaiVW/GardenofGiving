@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthScreen } from '@/components/auth-screen';
@@ -14,6 +14,8 @@ import {
   setEmailNotificationsEnabled,
   TodayState,
 } from '@/lib/gog';
+
+const todayFlower = require('@/assets/garden/today-flower.png');
 
 function StageIcon() {
   return (
@@ -157,7 +159,7 @@ export default function HomeScreen() {
               <View style={styles.todayArt}>
                 <View style={styles.paperDiscOne} />
                 <View style={styles.paperDiscTwo} />
-                <StageIcon />
+                <Image accessibilityIgnoresInvertColors source={todayFlower} style={styles.todayFlower} />
               </View>
             </View>
 
@@ -390,12 +392,20 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '24deg' }],
   },
   todayArt: {
-    bottom: -34,
-    height: 320,
-    opacity: 0.72,
+    bottom: -42,
+    height: 360,
+    opacity: 0.74,
     position: 'absolute',
-    right: -20,
-    width: 320,
+    right: -58,
+    width: 360,
+  },
+  todayFlower: {
+    bottom: 0,
+    height: 290,
+    position: 'absolute',
+    right: 0,
+    resizeMode: 'contain',
+    width: 290,
   },
   paperDiscOne: {
     backgroundColor: 'rgba(255,255,255,0.32)',
