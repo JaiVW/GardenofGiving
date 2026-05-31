@@ -6,6 +6,14 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
+function getEmailRedirectTo() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  return window.location.origin;
+}
+
 export function AuthScreen() {
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -27,6 +35,7 @@ export function AuthScreen() {
     const { error: signInError } = await supabase.auth.signInWithOtp({
       email: trimmedEmail,
       options: {
+        emailRedirectTo: getEmailRedirectTo(),
         shouldCreateUser: true,
       },
     });
