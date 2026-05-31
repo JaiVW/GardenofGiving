@@ -1,4 +1,5 @@
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
+import { Link, usePathname, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -50,6 +51,8 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
+  const pathname = usePathname();
+
   return (
     <View {...props} style={styles.tabListContainer}>
       <View style={styles.innerContainer}>
@@ -59,7 +62,43 @@ export function CustomTabList(props: TabListProps) {
         </View>
         <View style={styles.nav}>{props.children}</View>
       </View>
+      <View style={styles.bottomNav}>
+        <BottomLink href="/" label="Today" active={pathname === '/'} />
+        <BottomLink href="/explore" label="Garden" active={pathname === '/explore'} />
+        <View style={styles.disabledBottomItem}>
+          <ThemedText type="small" style={styles.bottomIcon}>
+            ◌
+          </ThemedText>
+          <ThemedText type="small" style={styles.bottomText}>
+            Well
+          </ThemedText>
+        </View>
+        <View style={styles.disabledBottomItem}>
+          <ThemedText type="small" style={styles.bottomIcon}>
+            ♡
+          </ThemedText>
+          <ThemedText type="small" style={styles.bottomText}>
+            Our Garden
+          </ThemedText>
+        </View>
+        <BottomLink href="/completed" label="Completed" active={pathname === '/completed'} />
+      </View>
     </View>
+  );
+}
+
+function BottomLink({ href, label, active }: { href: Href; label: string; active: boolean }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable style={styles.bottomItem}>
+        <ThemedText type="small" style={[styles.bottomIcon, active && styles.bottomActive]}>
+          {label === 'Today' ? '□' : label === 'Garden' ? '♧' : '☼'}
+        </ThemedText>
+        <ThemedText type="small" style={[styles.bottomText, active && styles.bottomActive]}>
+          {label}
+        </ThemedText>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -68,13 +107,17 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   tabListContainer: {
+    bottom: 0,
+    left: 0,
     alignItems: 'center',
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingTop: 18,
     pointerEvents: 'box-none',
     position: 'absolute',
+    right: 0,
+    top: 0,
     width: '100%',
     zIndex: 20,
   },
@@ -160,5 +203,52 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  bottomNav: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,253,249,0.9)',
+    borderColor: 'rgba(255,255,255,0.78)',
+    borderRadius: 24,
+    borderWidth: 1,
+    bottom: 18,
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'space-between',
+    maxWidth: MaxContentWidth,
+    minHeight: 76,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    position: 'absolute',
+    width: '100%',
+    shadowColor: '#231E18',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+  },
+  bottomItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+    justifyContent: 'center',
+  },
+  disabledBottomItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+    justifyContent: 'center',
+    opacity: 0.68,
+  },
+  bottomIcon: {
+    color: GardenColors.inkSoft,
+    fontSize: 18,
+    lineHeight: 20,
+  },
+  bottomText: {
+    color: GardenColors.inkSoft,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  bottomActive: {
+    color: GardenColors.mintDeep,
   },
 });

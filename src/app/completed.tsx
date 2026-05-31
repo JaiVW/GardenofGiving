@@ -9,8 +9,8 @@ import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatDateLabel, getCompletedTasks, TaskHistoryItem } from '@/lib/gog';
 
-const plantSeedling = require('@/assets/garden/plant-seedling.png');
-const plantBloom = require('@/assets/garden/plant-bloom.png');
+const plantSeedling = require('@/assets/garden/plants/family-a-stage-03.png');
+const plantBloom = require('@/assets/garden/plants/family-b-stage-08.png');
 
 function SeedMark() {
   return (

@@ -20,7 +20,8 @@ export type TaskHistoryItem = {
 };
 
 export type GardenSlot = {
-  stage: 'seed' | 'sprout' | 'growth' | 'bloom';
+  stage: number;
+  family: 'a' | 'b';
   tone: string;
   size: 'small' | 'medium' | 'large';
   row: 'front' | 'back';
@@ -36,20 +37,19 @@ type CompletedTaskRow = {
   completed: boolean;
 };
 
-const stages: GardenSlot['stage'][] = ['seed', 'sprout', 'growth', 'bloom'];
 const gardenPlots = [
-  { start: 1, delay: 0, pace: 3, tone: 'fern', size: 'medium' },
-  { start: 0, delay: 0, pace: 2, tone: 'sage', size: 'small' },
-  { start: 2, delay: 1, pace: 4, tone: 'rose', size: 'large' },
-  { start: 1, delay: 2, pace: 3, tone: 'moss', size: 'medium' },
-  { start: 0, delay: 3, pace: 2, tone: 'gold', size: 'small' },
-  { start: 1, delay: 4, pace: 4, tone: 'clover', size: 'medium' },
-  { start: 0, delay: 5, pace: 3, tone: 'berry', size: 'small' },
-  { start: 2, delay: 6, pace: 5, tone: 'fern', size: 'large' },
-  { start: 1, delay: 8, pace: 4, tone: 'sage', size: 'medium' },
-  { start: 0, delay: 10, pace: 3, tone: 'rose', size: 'small' },
-  { start: 1, delay: 14, pace: 4, tone: 'gold', size: 'medium' },
-  { start: 0, delay: 20, pace: 3, tone: 'clover', size: 'small' },
+  { start: 1, delay: 1, pace: 2, tone: 'fern', size: 'medium', family: 'a' },
+  { start: 1, delay: 2, pace: 2, tone: 'sage', size: 'small', family: 'a' },
+  { start: 2, delay: 3, pace: 2, tone: 'rose', size: 'large', family: 'b' },
+  { start: 1, delay: 4, pace: 2, tone: 'moss', size: 'medium', family: 'a' },
+  { start: 1, delay: 5, pace: 2, tone: 'gold', size: 'small', family: 'b' },
+  { start: 1, delay: 7, pace: 2, tone: 'clover', size: 'medium', family: 'a' },
+  { start: 1, delay: 9, pace: 2, tone: 'berry', size: 'small', family: 'b' },
+  { start: 2, delay: 12, pace: 3, tone: 'fern', size: 'large', family: 'a' },
+  { start: 1, delay: 16, pace: 3, tone: 'sage', size: 'medium', family: 'b' },
+  { start: 1, delay: 22, pace: 3, tone: 'rose', size: 'small', family: 'b' },
+  { start: 1, delay: 30, pace: 4, tone: 'gold', size: 'medium', family: 'a' },
+  { start: 1, delay: 45, pace: 4, tone: 'clover', size: 'small', family: 'b' },
 ] as const;
 const growthGoals = [2, 4, 6, 8, 10, 14, 20, 30, 45, 60];
 
@@ -67,11 +67,16 @@ export function formatDateLabel(dateKey: string) {
 }
 
 export function getGardenState(totalCompleted: number): GardenSlot[] {
-  return gardenPlots.map((plot, index) => {
+  return gardenPlots.flatMap((plot, index) => {
+    if (totalCompleted < plot.delay) {
+      return [];
+    }
+
     const earnedDays = Math.max(0, totalCompleted - plot.delay);
-    const stageIndex = Math.min(plot.start + Math.floor(earnedDays / plot.pace), stages.length - 1);
+    const stage = Math.min(plot.start + Math.floor(earnedDays / plot.pace), 10);
     return {
-      stage: stages[stageIndex],
+      stage,
+      family: plot.family,
       tone: plot.tone,
       size: plot.size,
       row: index >= 8 ? 'front' : 'back',

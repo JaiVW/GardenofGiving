@@ -10,12 +10,36 @@ import { useAuth } from '@/lib/auth';
 import { GardenSlot, getGardenState, getNextGrowthGoal } from '@/lib/gog';
 import { supabase } from '@/lib/supabase';
 
-const gardenScene = require('@/assets/garden/garden-scene.png');
-const plantSeedling = require('@/assets/garden/plant-seedling.png');
-const plantBloom = require('@/assets/garden/plant-bloom.png');
+const gardenScene = require('@/assets/garden/garden-land.png');
+const plantFamilies = {
+  a: [
+    require('@/assets/garden/plants/family-a-stage-01.png'),
+    require('@/assets/garden/plants/family-a-stage-02.png'),
+    require('@/assets/garden/plants/family-a-stage-03.png'),
+    require('@/assets/garden/plants/family-a-stage-04.png'),
+    require('@/assets/garden/plants/family-a-stage-05.png'),
+    require('@/assets/garden/plants/family-a-stage-06.png'),
+    require('@/assets/garden/plants/family-a-stage-07.png'),
+    require('@/assets/garden/plants/family-a-stage-08.png'),
+    require('@/assets/garden/plants/family-a-stage-09.png'),
+    require('@/assets/garden/plants/family-a-stage-10.png'),
+  ],
+  b: [
+    require('@/assets/garden/plants/family-b-stage-01.png'),
+    require('@/assets/garden/plants/family-b-stage-02.png'),
+    require('@/assets/garden/plants/family-b-stage-03.png'),
+    require('@/assets/garden/plants/family-b-stage-04.png'),
+    require('@/assets/garden/plants/family-b-stage-05.png'),
+    require('@/assets/garden/plants/family-b-stage-06.png'),
+    require('@/assets/garden/plants/family-b-stage-07.png'),
+    require('@/assets/garden/plants/family-b-stage-08.png'),
+    require('@/assets/garden/plants/family-b-stage-09.png'),
+    require('@/assets/garden/plants/family-b-stage-10.png'),
+  ],
+} as const;
 
 function Plant({ slot }: { slot: GardenSlot }) {
-  const source = slot.stage === 'seed' || slot.stage === 'sprout' ? plantSeedling : plantBloom;
+  const source = plantFamilies[slot.family][slot.stage - 1];
   return (
     <View
       style={[
@@ -27,7 +51,7 @@ function Plant({ slot }: { slot: GardenSlot }) {
       <Image
         accessibilityIgnoresInvertColors
         source={source}
-        style={[styles.plantImage, styles[slot.stage]]}
+        style={[styles.plantImage, { opacity: Math.min(1, 0.52 + slot.stage * 0.055) }]}
       />
     </View>
   );
@@ -120,9 +144,13 @@ export default function GardenScreen() {
             </View>
           ) : (
             <View style={styles.bedRow}>
-              {slots.map((slot, index) => (
-                <Plant key={`${slot.tone}-${index}`} slot={slot} />
-              ))}
+              {slots.length ? (
+                slots.map((slot, index) => <Plant key={`${slot.tone}-${index}`} slot={slot} />)
+              ) : (
+                <View style={styles.emptyGardenMessage}>
+                  <ThemedText style={styles.emptyGardenText}>Bare ground, ready for the first seed.</ThemedText>
+                </View>
+              )}
             </View>
           )}
         </ImageBackground>
@@ -158,7 +186,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignSelf: 'center',
-    maxWidth: MaxContentWidth + 80,
+    maxWidth: MaxContentWidth,
     paddingBottom: BottomTabInset + 36,
     paddingHorizontal: 16,
     paddingTop: 88,
@@ -186,7 +214,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(80,91,86,0.18)',
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 640,
+    minHeight: 690,
     overflow: 'hidden',
     position: 'relative',
     ...GardenShadow,
@@ -317,7 +345,7 @@ const styles = StyleSheet.create({
   },
   bedRow: {
     alignContent: 'flex-end',
-    bottom: '6%',
+    bottom: '12%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -325,15 +353,15 @@ const styles = StyleSheet.create({
     left: '5%',
     position: 'absolute',
     right: '5%',
-    top: '56%',
+    top: '50%',
     zIndex: 5,
   },
   plantSlot: {
     alignItems: 'center',
     flexBasis: '15%',
-    height: 126,
+    height: 116,
     justifyContent: 'flex-end',
-    minWidth: 86,
+    minWidth: 70,
     position: 'relative',
   },
   frontSlot: {
@@ -354,86 +382,23 @@ const styles = StyleSheet.create({
     width: '58%',
   },
   plantImage: {
-    height: 118,
+    height: 112,
     resizeMode: 'contain',
-    width: 118,
+    width: 112,
   },
-  plant: {
+  emptyGardenMessage: {
     alignItems: 'center',
-    height: 128,
-    justifyContent: 'flex-end',
-    position: 'relative',
-    width: 74,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,253,249,0.72)',
+    borderColor: GardenColors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
-  plantGreen: {
-    backgroundColor: GardenColors.mintDeep,
-  },
-  plantRose: {
-    backgroundColor: GardenColors.lavender,
-  },
-  plantGold: {
-    backgroundColor: '#A77B42',
-  },
-  stem: {
-    borderRadius: 5,
-    bottom: 12,
-    height: 92,
-    position: 'absolute',
-    width: 8,
-  },
-  leaf: {
-    borderRadius: 24,
-    height: 42,
-    position: 'absolute',
-    width: 30,
-  },
-  leafLeft: {
-    left: 12,
-    top: 52,
-    transform: [{ rotate: '-35deg' }],
-  },
-  leafRight: {
-    right: 12,
-    top: 42,
-    transform: [{ rotate: '35deg' }],
-  },
-  leafSmallLeft: {
-    height: 32,
-    left: 18,
-    top: 24,
-    transform: [{ rotate: '-25deg' }],
-    width: 24,
-  },
-  leafSmallRight: {
-    height: 32,
-    right: 18,
-    top: 18,
-    transform: [{ rotate: '25deg' }],
-    width: 24,
-  },
-  flower: {
-    borderColor: 'rgba(255,255,255,0.72)',
-    borderRadius: 18,
-    borderWidth: 5,
-    height: 36,
-    position: 'absolute',
-    top: 0,
-    width: 36,
-  },
-  seed: {
-    opacity: 0.34,
-    transform: [{ scale: 0.52 }],
-  },
-  sprout: {
-    opacity: 0.66,
-    transform: [{ scale: 0.72 }],
-  },
-  growth: {
-    opacity: 0.88,
-    transform: [{ scale: 0.92 }],
-  },
-  bloom: {
-    opacity: 1,
+  emptyGardenText: {
+    color: GardenColors.inkSoft,
+    fontSize: 13,
   },
   progress: {
     alignItems: 'center',
