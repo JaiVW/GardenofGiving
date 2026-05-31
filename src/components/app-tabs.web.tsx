@@ -1,31 +1,25 @@
-import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
-} from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { GardenColors, GardenSoftShadow } from '@/constants/garden-theme';
+import { MaxContentWidth } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+      <TabSlot style={styles.slot} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+          <TabTrigger name="today" href="/" asChild>
+            <TabButton>Today</TabButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
+          <TabTrigger name="garden" href="/explore" asChild>
+            <TabButton>Garden</TabButton>
+          </TabTrigger>
+          <TabTrigger name="completed" href="/completed" asChild>
+            <TabButton>Completed</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -33,83 +27,138 @@ export default function AppTabs() {
   );
 }
 
+function BrandMark() {
+  return (
+    <View style={styles.brandMark}>
+      <View style={[styles.brandPetal, styles.brandPetalOne]} />
+      <View style={[styles.brandPetal, styles.brandPetalTwo]} />
+      <View style={styles.brandSeed} />
+    </View>
+  );
+}
+
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+    <Pressable {...props} style={({ pressed }) => [styles.tabPressable, pressed && styles.pressed]}>
+      <View style={[styles.tabButton, isFocused && styles.tabButtonActive]}>
+        <ThemedText type="smallBold" style={[styles.tabText, isFocused && styles.tabTextActive]}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
-        </ThemedText>
-
-        {props.children}
-
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
-      </ThemedView>
+      <View style={styles.innerContainer}>
+        <View style={styles.brand}>
+          <BrandMark />
+          <ThemedText style={styles.brandText}>Garden of Giving</ThemedText>
+        </View>
+        <View style={styles.nav}>{props.children}</View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  slot: {
+    height: '100%',
+  },
   tabListContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    pointerEvents: 'box-none',
     position: 'absolute',
     width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
+    zIndex: 20,
   },
   innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
     alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
+    flexDirection: 'row',
+    gap: 14,
+    justifyContent: 'space-between',
+    maxWidth: MaxContentWidth + 120,
+    width: '100%',
+  },
+  brand: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
   },
   brandText: {
-    marginRight: 'auto',
+    color: GardenColors.ink,
+    fontFamily: 'Georgia, Times New Roman, serif',
+    fontSize: 18,
+  },
+  brandMark: {
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: GardenColors.line,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
+    position: 'relative',
+    width: 32,
+    ...GardenSoftShadow,
+  },
+  brandPetal: {
+    borderRadius: 9,
+    height: 12,
+    position: 'absolute',
+    top: 10,
+    width: 12,
+  },
+  brandPetalOne: {
+    backgroundColor: GardenColors.teal,
+    left: 7,
+  },
+  brandPetalTwo: {
+    backgroundColor: GardenColors.sage,
+    right: 7,
+  },
+  brandSeed: {
+    backgroundColor: GardenColors.claySoft,
+    borderRadius: 4,
+    bottom: 8,
+    height: 8,
+    left: 12,
+    position: 'absolute',
+    width: 8,
+  },
+  nav: {
+    backgroundColor: 'rgba(255,253,249,0.72)',
+    borderColor: GardenColors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 3,
+    padding: 4,
+  },
+  tabPressable: {
+    minWidth: 112,
+  },
+  tabButton: {
+    alignItems: 'center',
+    borderRadius: 999,
+    justifyContent: 'center',
+    minHeight: 38,
+    paddingHorizontal: 22,
+  },
+  tabButtonActive: {
+    backgroundColor: GardenColors.clay,
+  },
+  tabText: {
+    color: GardenColors.ink,
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
   },
   pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
+    opacity: 0.75,
   },
 });

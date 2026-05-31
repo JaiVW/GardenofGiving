@@ -59,9 +59,10 @@ export function todayKey() {
 
 export function formatDateLabel(dateKey: string) {
   return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short',
-    month: 'short',
+    weekday: 'long',
+    month: 'long',
     day: 'numeric',
+    year: 'numeric',
   }).format(new Date(`${dateKey}T12:00:00`));
 }
 

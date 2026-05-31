@@ -4,10 +4,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthScreen } from '@/components/auth-screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { GardenColors, GardenSoftShadow } from '@/constants/garden-theme';
+import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatDateLabel, getCompletedTasks, TaskHistoryItem } from '@/lib/gog';
+
+function SeedMark() {
+  return (
+    <View style={styles.seedMark}>
+      <View style={styles.seedStem} />
+      <View style={[styles.seedLeaf, styles.seedLeafLeft]} />
+      <View style={[styles.seedLeaf, styles.seedLeafRight]} />
+    </View>
+  );
+}
 
 export default function CompletedScreen() {
   const { isLoading: isAuthLoading, session } = useAuth();
@@ -37,9 +47,9 @@ export default function CompletedScreen() {
 
   if (isAuthLoading) {
     return (
-      <ThemedView style={styles.centered}>
+      <View style={styles.centered}>
         <ActivityIndicator />
-      </ThemedView>
+      </View>
     );
   }
 
@@ -48,95 +58,226 @@ export default function CompletedScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <ThemedText type="smallBold" style={styles.kicker}>
-              Completed
-            </ThemedText>
-            <ThemedText type="title" style={styles.title}>
-              {tasks.length} completed day{tasks.length === 1 ? '' : 's'}
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <ThemedText type="smallBold" style={styles.kicker}>
+            Completed
+          </ThemedText>
+          <ThemedText type="title" style={styles.title}>
+            {tasks.length} completed day{tasks.length === 1 ? '' : 's'}
+          </ThemedText>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingPanel}>
+            <ActivityIndicator />
+          </View>
+        ) : tasks.length ? (
+          <View style={styles.timeline}>
+            <View style={styles.timelineLine} />
+            {tasks.map((task, index) => (
+              <View key={task.date} style={styles.timelineItem}>
+                <View
+                  style={[
+                    styles.timelineDot,
+                    index % 4 === 1 && styles.dotLavender,
+                    index % 4 === 2 && styles.dotMint,
+                    index % 4 === 3 && styles.dotViolet,
+                  ]}
+                />
+                <View style={styles.timelineCard}>
+                  <View style={styles.taskCopy}>
+                    <ThemedText type="smallBold" style={styles.taskDate}>
+                      {formatDateLabel(task.date)}
+                    </ThemedText>
+                    <ThemedText style={styles.taskText}>{task.text}</ThemedText>
+                    <View style={styles.stageRow}>
+                      <SeedMark />
+                      <ThemedText type="smallBold" style={styles.stageLabel}>
+                        Seed
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <SeedMark />
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyCard}>
+            <ThemedText style={styles.emptyNote}>
+              Completed tasks will appear here after you mark an invitation done.
             </ThemedText>
           </View>
-
-          {isLoading ? (
-            <ActivityIndicator />
-          ) : (
-            <View style={styles.list}>
-              {tasks.length ? (
-                tasks.map((task) => (
-                  <ThemedView key={task.date} type="backgroundElement" style={styles.timelineCard}>
-                    <View style={styles.dot} />
-                    <View style={styles.taskCopy}>
-                      <ThemedText type="smallBold">{formatDateLabel(task.date)}</ThemedText>
-                      <ThemedText>{task.text}</ThemedText>
-                    </View>
-                  </ThemedView>
-                ))
-              ) : (
-                <ThemedText type="small" themeColor="textSecondary">
-                  Completed tasks will appear here after you mark an invitation done.
-                </ThemedText>
-              )}
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
+    backgroundColor: GardenColors.bg,
     flex: 1,
-    flexDirection: 'row',
   },
   centered: {
     alignItems: 'center',
+    backgroundColor: GardenColors.bg,
     flex: 1,
     justifyContent: 'center',
   },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
   scrollContent: {
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.four,
-    paddingTop: Spacing.five,
+    alignSelf: 'center',
+    maxWidth: MaxContentWidth,
+    paddingBottom: BottomTabInset + 36,
+    paddingHorizontal: 16,
+    paddingTop: 88,
+    width: '100%',
   },
   header: {
-    gap: Spacing.two,
+    alignItems: 'center',
+    marginBottom: 18,
   },
   kicker: {
-    color: '#2E6659',
+    color: GardenColors.inkSoft,
+    letterSpacing: 2,
+    marginBottom: 12,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 40,
-    lineHeight: 44,
+    color: GardenColors.ink,
+    fontFamily: 'Georgia, Times New Roman, serif',
+    fontSize: 42,
+    fontWeight: '400',
+    lineHeight: 46,
+    textAlign: 'center',
   },
-  list: {
-    gap: Spacing.two,
+  loadingPanel: {
+    alignItems: 'center',
+    minHeight: 260,
+    justifyContent: 'center',
+  },
+  timeline: {
+    paddingBottom: 6,
+    paddingLeft: 28,
+    position: 'relative',
+  },
+  timelineLine: {
+    backgroundColor: 'rgba(121,105,91,0.25)',
+    bottom: 20,
+    left: 13,
+    position: 'absolute',
+    top: 18,
+    width: 1,
+  },
+  timelineItem: {
+    marginBottom: 18,
+    position: 'relative',
+  },
+  timelineDot: {
+    backgroundColor: GardenColors.clay,
+    borderColor: 'rgba(255,255,255,0.64)',
+    borderRadius: 14,
+    borderWidth: 7,
+    height: 28,
+    left: -27,
+    position: 'absolute',
+    top: 20,
+    width: 28,
+    zIndex: 2,
+    ...GardenSoftShadow,
+  },
+  dotLavender: {
+    backgroundColor: GardenColors.lavender,
+  },
+  dotMint: {
+    backgroundColor: GardenColors.teal,
+  },
+  dotViolet: {
+    backgroundColor: GardenColors.violet,
   },
   timelineCard: {
-    alignItems: 'flex-start',
-    borderRadius: Spacing.two,
-    flexDirection: 'row',
-    gap: Spacing.three,
-    padding: Spacing.three,
-  },
-  dot: {
-    backgroundColor: '#E95732',
+    backgroundColor: GardenColors.glass,
+    borderColor: GardenColors.line,
     borderRadius: 8,
-    height: 16,
-    marginTop: 4,
-    width: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 18,
+    justifyContent: 'space-between',
+    minHeight: 124,
+    overflow: 'hidden',
+    padding: 20,
+    ...GardenSoftShadow,
   },
   taskCopy: {
     flex: 1,
-    gap: Spacing.one,
+    gap: 6,
+  },
+  taskDate: {
+    color: GardenColors.inkSoft,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  taskText: {
+    color: GardenColors.ink,
+    fontFamily: 'Georgia, Times New Roman, serif',
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  stageRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 7,
+    marginTop: 4,
+  },
+  stageLabel: {
+    color: GardenColors.mintDeep,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  seedMark: {
+    height: 72,
+    opacity: 0.68,
+    position: 'relative',
+    width: 72,
+  },
+  seedStem: {
+    backgroundColor: GardenColors.mintDeep,
+    borderRadius: 3,
+    bottom: 10,
+    height: 46,
+    left: 34,
+    position: 'absolute',
+    width: 5,
+  },
+  seedLeaf: {
+    backgroundColor: GardenColors.mintDeep,
+    borderRadius: 18,
+    height: 30,
+    position: 'absolute',
+    top: 22,
+    width: 22,
+  },
+  seedLeafLeft: {
+    left: 16,
+    transform: [{ rotate: '-34deg' }],
+  },
+  seedLeafRight: {
+    right: 15,
+    top: 16,
+    transform: [{ rotate: '34deg' }],
+  },
+  emptyCard: {
+    backgroundColor: GardenColors.glass,
+    borderColor: GardenColors.line,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 22,
+    ...GardenSoftShadow,
+  },
+  emptyNote: {
+    color: GardenColors.inkSoft,
+    lineHeight: 22,
   },
 });
