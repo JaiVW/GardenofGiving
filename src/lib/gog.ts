@@ -57,6 +57,12 @@ export function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dateKeyDaysAgo(daysAgo: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  return date.toISOString().slice(0, 10);
+}
+
 export function formatDateLabel(dateKey: string) {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
@@ -285,6 +291,42 @@ export async function saveCheckin(userId: string, completed: boolean) {
       { user_id: userId, date: todayKey(), completed },
       { onConflict: 'user_id,date' }
     );
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function addTestCompletedDay(userId: string) {
+  const { data: existing, error: existingError } = await supabase
+    .from('checkins')
+    .select('date')
+    .eq('user_id', userId);
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  const usedDates = new Set(existing.map((row) => row.date));
+  let date = '';
+
+  for (let daysAgo = 1; daysAgo <= 365; daysAgo++) {
+    const candidate = dateKeyDaysAgo(daysAgo);
+    if (!usedDates.has(candidate)) {
+      date = candidate;
+      break;
+    }
+  }
+
+  if (!date) {
+    throw new Error('Could not find an unused test date.');
+  }
+
+  await getOrAssignChallenge(userId, date);
+
+  const { error } = await supabase
+    .from('checkins')
+    .insert({ user_id: userId, date, completed: true });
 
   if (error) {
     throw error;

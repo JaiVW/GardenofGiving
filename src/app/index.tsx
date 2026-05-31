@@ -8,6 +8,7 @@ import { GardenColors, GardenShadow } from '@/constants/garden-theme';
 import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
+  addTestCompletedDay,
   formatDateLabel,
   getTodayState,
   saveCheckin,
@@ -105,6 +106,24 @@ export default function HomeScreen() {
         caughtError instanceof Error ? caughtError.message : 'Could not update email reminders.'
       );
       setTodayState({ ...todayState, emailNotificationsEnabled: !enabled });
+    }
+  }
+
+  async function handleAddTestDay() {
+    if (!userId) {
+      return;
+    }
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      await addTestCompletedDay(userId);
+      await loadToday();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not add a test day.');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -216,6 +235,16 @@ export default function HomeScreen() {
               </View>
               <ThemedText style={styles.summaryCopy}>You&apos;re growing something beautiful.</ThemedText>
             </View>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSaving}
+              onPress={handleAddTestDay}
+              style={({ pressed }) => [styles.testButton, pressed && styles.pressed]}>
+              <ThemedText type="smallBold" style={styles.testButtonText}>
+                Add test completed day
+              </ThemedText>
+            </Pressable>
 
             <View style={styles.notificationSettings}>
               <ThemedText type="smallBold" style={styles.notificationText}>
@@ -558,6 +587,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     ...GardenShadow,
+  },
+  testButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,253,249,0.82)',
+    borderColor: GardenColors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginBottom: 18,
+    minHeight: 44,
+    paddingHorizontal: 18,
+  },
+  testButtonText: {
+    color: GardenColors.mintDeep,
   },
   notificationText: {
     color: GardenColors.ink,

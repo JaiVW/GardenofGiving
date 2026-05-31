@@ -121,6 +121,7 @@ export default function GardenScreen() {
         <ImageBackground
           accessibilityIgnoresInvertColors
           imageStyle={styles.gardenSceneImage}
+          resizeMode="stretch"
           source={gardenScene}
           style={styles.gardenBed}>
           <View style={styles.sceneVeil} />
@@ -214,14 +215,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(80,91,86,0.18)',
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 690,
+    minHeight: 650,
     overflow: 'hidden',
     position: 'relative',
     ...GardenShadow,
   },
   gardenSceneImage: {
     borderRadius: 8,
-    resizeMode: 'cover',
   },
   sceneVeil: {
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   bedRow: {
     alignContent: 'flex-end',
-    bottom: '12%',
+    bottom: '18%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -353,15 +353,15 @@ const styles = StyleSheet.create({
     left: '5%',
     position: 'absolute',
     right: '5%',
-    top: '50%',
+    top: '43%',
     zIndex: 5,
   },
   plantSlot: {
     alignItems: 'center',
     flexBasis: '15%',
-    height: 116,
+    height: 108,
     justifyContent: 'flex-end',
-    minWidth: 70,
+    minWidth: 66,
     position: 'relative',
   },
   frontSlot: {
@@ -382,9 +382,9 @@ const styles = StyleSheet.create({
     width: '58%',
   },
   plantImage: {
-    height: 112,
+    height: 108,
     resizeMode: 'contain',
-    width: 112,
+    width: 108,
   },
   emptyGardenMessage: {
     alignItems: 'center',
